@@ -4,6 +4,7 @@ import { getRoleFromRequest } from './lib/auth'
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
+  // Admin 경로 보호
   if (pathname.startsWith('/admin')) {
     const role = await getRoleFromRequest(request)
     if (role !== 'admin') {
@@ -11,9 +12,10 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith('/student')) {
+  // Viewer 경로 보호
+  if (pathname.startsWith('/viewer')) {
     const role = await getRoleFromRequest(request)
-    if (role !== 'student') {
+    if (!role) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
   }
@@ -22,5 +24,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/student/:path*'],
+  matcher: ['/admin/:path*', '/viewer/:path*'],
 }
