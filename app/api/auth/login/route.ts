@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     })
 
     const cookie = await signRoleCookie(role as 'admin' | 'viewer')
-    response.cookies.set('role', cookie, {
+    response.cookies.set('gk_role', cookie, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
