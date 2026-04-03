@@ -128,13 +128,13 @@ export async function syncDevToArticles() {
               tag
             )
 
-            // 한글로 번역
+            // 한글로 번역 - 성능을 위해 처음 3개만 번역
             let translatedTitle = article.title
             let translatedDescription = article.description
 
-            // 영문이 포함된 경우만 번역
+            // 영문이 포함된 경우만 번역 (처음 3개만)
             const hasEnglish = /[a-zA-Z]/.test(article.title)
-            if (hasEnglish) {
+            if (hasEnglish && totalSaved < 3) {
               console.log(`🌍 번역 중: ${article.title.substring(0, 40)}...`)
               const translated = await translateToKorean(
                 article.title.substring(0, 255),

@@ -132,13 +132,13 @@ export async function syncRedditPosts() {
             // 카테고리 점수 매기기
             const scores = scorePostForCategories(post.title, post.description)
 
-            // 한글로 번역 (영문 제목만)
+            // 한글로 번역 (영문 제목만) - 성능을 위해 배치로 처리
             let translatedTitle = post.title
             let translatedDescription = post.description
 
-            // 영문이 포함된 경우만 번역
+            // 영문이 포함된 경우만 번역 (처음 5개만 번역, 나머지는 원문)
             const hasEnglish = /[a-zA-Z]/.test(post.title)
-            if (hasEnglish) {
+            if (hasEnglish && totalSaved < 5) {
               console.log(`🌍 번역 중: ${post.title.substring(0, 40)}...`)
               const translated = await translateToKorean(
                 post.title.substring(0, 255),
