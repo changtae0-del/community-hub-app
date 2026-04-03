@@ -1,4 +1,5 @@
 import { createServerSupabase } from './supabase-server'
+import { translateToKorean } from './translator'
 
 const DEVTO_TAGS = [
   'ai', 'machine-learning', 'learning', 'education', 
@@ -127,14 +128,31 @@ export async function syncDevToArticles() {
               tag
             )
 
+            // 한글로 번역
+            let translatedTitle = article.title
+            let translatedDescription = article.description
+
+            // 영문이 포함된 경우만 번역
+            const hasEnglish = /[a-zA-Z]/.test(article.title)
+            if (hasEnglish) {
+              console.log(`🌍 번역 중: ${article.title.substring(0, 40)}...`)
+              const translated = await translateToKorean(
+                article.title.substring(0, 255),
+                article.description.substring(0, 500)
+              )
+              translatedTitle = translated.title
+              translatedDescription = translated.description
+              console.log(`✅ 번역됨: ${translatedTitle.substring(0, 40)}...`)
+            }
+
             // 각 카테고리에 저장 (점수가 충분하면)
             for (const [category, score] of Object.entries(scores)) {
               if (score >= 4 && categoryMap[category]) {
                 const { error } = await db.from('posts').insert([
                   {
                     category_id: categoryMap[category],
-                    title: article.title.substring(0, 255),
-                    description: article.description.substring(0, 500),
+                    title: `📝 ${translatedTitle.substring(0, 250)}`,
+                    description: translatedDescription.substring(0, 500),
                     content: article.content.substring(0, 5000),
                     author: article.author || 'Dev.to',
                     source_url: article.source_url,
@@ -145,7 +163,7 @@ export async function syncDevToArticles() {
                 ])
 
                 if (!error) {
-                  console.log(`✅ [${category}] 저장됨: ${article.title.substring(0, 50)}...`)
+                  console.log(`✅ [${category}] 저장됨: ${translatedTitle.substring(0, 50)}...`)
                   totalSaved++
                 }
               }

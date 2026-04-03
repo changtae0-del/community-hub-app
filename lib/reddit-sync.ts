@@ -1,4 +1,5 @@
 import { createServerSupabase } from './supabase-server'
+import { translateToKorean } from './translator'
 
 const REDDIT_SUBREDDITS = {
   homeschool: 'homeschool',
@@ -131,14 +132,31 @@ export async function syncRedditPosts() {
             // 카테고리 점수 매기기
             const scores = scorePostForCategories(post.title, post.description)
 
+            // 한글로 번역 (영문 제목만)
+            let translatedTitle = post.title
+            let translatedDescription = post.description
+
+            // 영문이 포함된 경우만 번역
+            const hasEnglish = /[a-zA-Z]/.test(post.title)
+            if (hasEnglish) {
+              console.log(`🌍 번역 중: ${post.title.substring(0, 40)}...`)
+              const translated = await translateToKorean(
+                post.title.substring(0, 255),
+                post.description.substring(0, 500)
+              )
+              translatedTitle = translated.title
+              translatedDescription = translated.description
+              console.log(`✅ 번역됨: ${translatedTitle.substring(0, 40)}...`)
+            }
+
             // 각 카테고리에 저장 (점수가 충분하면)
             for (const [category, score] of Object.entries(scores)) {
               if (score >= 4 && categoryMap[category]) {
                 const { error } = await db.from('posts').insert([
                   {
                     category_id: categoryMap[category],
-                    title: post.title.substring(0, 255),
-                    description: post.description.substring(0, 500),
+                    title: `🇬🇧 ${translatedTitle.substring(0, 250)}`,
+                    description: translatedDescription.substring(0, 500),
                     content: post.content.substring(0, 5000),
                     author: post.author || 'Reddit',
                     source_url: post.source_url,
@@ -149,7 +167,7 @@ export async function syncRedditPosts() {
                 ])
 
                 if (!error) {
-                  console.log(`✅ [${category}] 저장됨: ${post.title.substring(0, 50)}...`)
+                  console.log(`✅ [${category}] 저장됨: ${translatedTitle.substring(0, 50)}...`)
                   totalSaved++
                 }
               }
