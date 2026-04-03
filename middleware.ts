@@ -12,17 +12,9 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  // Viewer 경로 보호
-  if (pathname.startsWith('/viewer')) {
-    const role = await getRoleFromRequest(request)
-    if (!role) {
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-  }
-
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/viewer/:path*'],
+  matcher: ['/admin/:path*'],
 }
