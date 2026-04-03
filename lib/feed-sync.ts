@@ -1,7 +1,51 @@
 import Parser from 'rss-parser'
 import { createServerSupabase } from './supabase-server'
+import OpenAI from 'openai'
 
 const parser = new Parser()
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
+
+// AI로 뉴스 중요도 평가 (1-10점)
+async function analyzeNewsImportance(title: string, description: string): Promise<number> {
+  try {
+    if (!process.env.OPENAI_API_KEY) {
+      console.warn('⚠️ OpenAI API 키가 없습니다. 기본 점수(5점) 사용')
+      return 5
+    }
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'user',
+          content: `다음 뉴스의 중요도를 1-10점으로 평가해주세요.
+
+제목: ${title}
+설명: ${description}
+
+평가 기준:
+- 교육/홈스쿨 정책 관련성 (높음 = 고점)
+- 사회적 영향도
+- 일반인의 관심도
+- 긴급성
+
+점수만 숫자로 답변해주세요. (1-10, 예: 8)`
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 10
+    })
+
+    const scoreText = response.choices[0].message.content?.trim() || '5'
+    const score = Math.max(1, Math.min(10, parseInt(scoreText) || 5))
+    return score
+  } catch (error) {
+    console.error('⚠️ AI 분석 오류:', error)
+    return 5 // 기본값
+  }
+}
 
 // 주요 뉴스 사이트 RSS 피드 URL
 const RSS_FEEDS = {
@@ -51,21 +95,39 @@ export async function syncNewsFeed() {
           continue // 다음 피드로 진행
         }
 
-        // 최신 3개 항목만 처리 (여러 소스이므로 개수 줄임)
-        const items = feed.items?.slice(0, 3) || []
+        // 최신 10개 항목 가져오기 (AI로 점수 매기고 상위만 선택)
+        const rawItems = feed.items?.slice(0, 10) || []
 
-        if (items.length === 0) {
+        if (rawItems.length === 0) {
           console.log(`⚠️  [${source}] 피드에 항목이 없습니다`)
           continue
         }
 
+        // AI로 중요도 분석
+        console.log(`🤖 [${source}] AI 분석 시작...`)
+        const itemsWithScore = await Promise.all(
+          rawItems.map(async (item) => {
+            const score = await analyzeNewsImportance(
+              item.title || '',
+              item.contentSnippet || item.summary || ''
+            )
+            return { item, score }
+          })
+        )
+
+        // 점수 기준 정렬 후 상위 3개만 선택
+        const topItems = itemsWithScore
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3)
+          .map(({ item, score }) => ({ item, score }))
+
         let savedCount = 0
         let skippedCount = 0
 
-        for (const item of items) {
+        for (const { item, score } of topItems) {
           try {
             if (!item.link || !item.title) {
-              console.log(`⏭️  [${source}] 필수 정보 없음: ${item.title}`)
+              console.log(`⏭️  [${source}] 필수 정보 없음`)
               skippedCount++
               continue
             }
@@ -101,7 +163,7 @@ export async function syncNewsFeed() {
               console.error(`❌ [${source}] 저장 실패: ${item.title}`)
               skippedCount++
             } else {
-              console.log(`✅ [${source}] 저장됨: ${item.title}`)
+              console.log(`✅ [${source}] 저장됨 (점수: ${score}/10): ${item.title}`)
               savedCount++
             }
           } catch (itemError) {
