@@ -3,7 +3,7 @@ import { Post } from '@/types'
 import Link from 'next/link'
 import { createServerSupabase } from '@/lib/supabase-server'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 async function getPost(id: string): Promise<Post | null> {
   try {
