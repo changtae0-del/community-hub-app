@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 async function getPost(id: string): Promise<Post | null> {
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/posts/${id}`,
+      `/api/posts/${id}`,
       { cache: 'no-store' }
     )
 
