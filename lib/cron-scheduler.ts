@@ -1,7 +1,7 @@
 import cron from 'node-cron'
 import { syncNewsFeed } from './feed-sync'
 
-let scheduledTask: cron.ScheduledTask | null = null
+let scheduledTask: any = null
 
 export function startFeedScheduler() {
   try {
