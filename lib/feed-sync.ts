@@ -116,12 +116,24 @@ const CATEGORIES_CONFIG = [
   { name: '신학공부 관련 뉴스', slug: 'theology', icon: '📖', color: '#10b981' }
 ]
 
-// 주요 뉴스 사이트 RSS 피드 URL
+// 주요 뉴스 사이트 RSS 피드 URL (확대된 소스)
 const RSS_FEEDS = {
+  // 기독교 뉴스
+  christiandaily: 'https://www.christiandaily.co.kr/rss',
+
+  // 일반 뉴스
   sbs: 'https://news.sbs.co.kr/news/rss.do',
   ytn: 'https://www.ytn.co.kr/_rss/',
   news1: 'https://news1.kr/rss/',
-  christiandaily: 'https://www.christiandaily.co.kr/rss'
+
+  // 교육 관련
+  kedi_announce: 'https://www.kedi.re.kr/khome/main/announce/rssAnnounceData.do?board_sq_no=1',
+  kedi_seminar: 'https://www.kedi.re.kr/khome/main/announce/rssSeminarData.do',
+  kedi_research: 'https://www.kedi.re.kr/khome/main/research/rssPubData.do',
+
+  // IT/기술 뉴스
+  platum: 'https://platum.kr/feed/',
+  zdnet: 'https://www.zdnet.co.kr/rss.xml',
 }
 
 export async function syncNewsFeed() {
