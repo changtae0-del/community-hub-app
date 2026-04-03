@@ -7,13 +7,23 @@ export const dynamic = 'force-dynamic'
 
 async function getPost(id: string): Promise<Post | null> {
   try {
-    const response = await fetch(
-      `/api/posts/${id}`,
-      { cache: 'no-store' }
-    )
+    const db = createServerSupabase()
 
-    if (!response.ok) return null
-    return response.json()
+    const { data, error } = await db
+      .from('posts')
+      .select('*, categories(id, name, slug, icon, color_hex)')
+      .eq('id', id)
+      .single()
+
+    if (error || !data) return null
+
+    // 조회수 증가
+    await db
+      .from('posts')
+      .update({ views: (data.views || 0) + 1 })
+      .eq('id', id)
+
+    return data as Post
   } catch (error) {
     console.error('Failed to fetch post:', error)
     return null
